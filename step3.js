@@ -52,3 +52,66 @@
 
 // - your functions are small, could be tested, and do one thing
 // - you minimize duplication of code throughout
+
+const fs = require('fs');
+const process = require('process');
+const axios = require('axios');
+const async = require('async');
+
+const cat = (path, write) => {
+    fs.readFile(path, 'utf8', (err, data) => {
+            if (err) {
+                console.log("ERROR:", err);
+                process.kill(1)
+            }
+                if(write === true){
+                    writeFile(process.argv[3], data);
+                }
+                else{
+                    console.log(data);
+                }
+        
+        }
+    )
+}
+
+async function webCat(path, write){
+    try{
+        let response = await axios.get(path);
+        if (write){
+            writeFile(process.argv[3], response.data);
+        }
+        else{
+            console.log(response.data);
+        }
+    } catch (err){
+        console.log(err, 'ERROR: Cannot connect to page. Check URL.');
+        process.exit(1);
+    }
+} 
+
+function isURL (path){
+    if (path.slice(0, 4) === 'http'){
+        return true
+    }
+    return false
+}
+
+const writeFile = (writeTo, content) => {
+    fs.writeFile(writeTo, content, "utf8", function(err) {
+        if (err) {
+            console.error(`Couldn't write ${writeTo}: `, err);
+            process.exit(1);
+        }
+        console.log('Successfully wrote to file!');
+    });
+}
+
+const readOrWriteFile = (arg1, arg2) => {
+    let path = arg2;
+    let write;
+    (arg1 === '--out') ? write = true : path = arg1;
+    (isURL(path)) ? webCat(path, write) : cat(path, write);
+}
+
+readOrWriteFile(process.argv[2], process.argv[4]);
